@@ -1,4 +1,6 @@
 # Base de datos para aplicaciones
+
+![Imagen Base de Datos](./Diagnostico/IMG/Imagen.jpg)
 ---
 En este repositorio se pueden encontrar temas y ejercicios de base de datos para aplicaciones tales como: 
 
@@ -9,3 +11,4 @@ En este repositorio se pueden encontrar temas y ejercicios de base de datos para
 5. - Manejor de Transacciones
 6. - Seguridad de base de datos
 7. - Despliegue de Aplicaciones
+
