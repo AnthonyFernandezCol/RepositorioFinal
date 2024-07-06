@@ -1,45 +1,63 @@
 use Northwind
+go
 
-create or alter proc Registrar_Stock
-@_OrderID Int,
-@_ProductID int,
-@_Quantity smallint,
-@_Discount real
-As
-Begin
-Declare @Existencia_Prod INT
+select * from Orders
+select * from [Order Details]
 
-	select @Existencia_Prod = UnitPrice from Products
-	Where ProductID = @_ProductID
-	
-	if Exists(Select 1 From Products Where ProductID = @_ProductID ) 
-	Begin
-	Insert into [Order Details](OrderID, ProductID, UnitPrice, Quantity, Discount) 
-	Values(@_OrderID,@_ProductID, @Existencia_Prod, @_Quantity, @_Discount)
-	End
-	else if
-	Exists(Select 0 From Products Where ProductID = @_ProductID)
-	Begin
-	Print('El Producto no existe')
-	end
-END;
-
-Create or alter trigger TGGR_GesVenta
-On [Orders Details]
+create or alter trigger verificar_salario
+on [Order Details]
 after insert
-As 
-Begin
-	Declare 
-	@GVOrderID Int,
-	@GVProductID Int,
-	@Existencia INT,
-	@GVQuantity smallint
-	select @GVOrderID = OrderID, @GVProductID = ProductID, @GVQuantity = Quantity From inserted
-		
-		Select @Existencia = p.UnitsInStock from Products as p where ProductID = @GVProductID 
-
-	If @Existencia >= @GVQuantity
-	Begin
-		
+as 
+begin
+begin transaction
+if exists(select 1 from inserted) or  not exists(select 1 from deleted)
+begin
+	declare
+		@_Quantity smallint, 
+		@_Stock smallint,
+		@_ProductID int
+		set @_Quantity = (select Quantity from inserted)
+		set @_ProductID = (select ProductID from inserted)
+		set @_Stock = (select UnitsInStock from Products where ProductID = @_ProductID)
+	if @_Quantity <= @_Stock
+		begin
+			update Northwind.dbo.Products
+			set UnitsInStock = (UnitsInStock-@_Quantity)
+			where ProductID = @_ProductID
+				print ('La compra se realizo exitosamente')
+		commit
 	end
-End;
+else 
+	begin
+		raiserror('no se cuenta con la cantidad  de producto', 16,1)
+		rollback transaction;
+	end
+end
+end
+
+create or alter procedure sp_insert_order_details
+--Variables
+@id as int,
+@proid as int,
+@Quant as smallint,
+@Discount as real
+as
+begin
+if exists (select 1 from Products where ProductID = @proid)
+begin
+
+declare
+@Unitp money
+select @Unitp = UnitPrice from Products where ProductID = @proid
+insert into [Order Details](OrderID, ProductID, UnitPrice, Quantity, Discount)
+values (@id,@proid,@Unitp,@Quant,@Discount)
+end
+else
+begin
+print ('Algo salio mal')
+end
+end
+
+exec sp_insert_order_details @id = 10248, @proid = 11,@Quant = 2,@Discount = 0;
+
+DELETE [Order Details] WHERE ProductID = 11  and OrderID = 10248
